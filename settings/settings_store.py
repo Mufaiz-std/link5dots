@@ -9,7 +9,8 @@ class SettingsStore:
     _settings = {
         'sound': True,
         'haptics': True,
-        'show_last_move': True
+        'show_last_move': True,
+        'allow_undo': True
     }
 
     def __new__(cls):

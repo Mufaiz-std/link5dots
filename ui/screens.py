@@ -39,6 +39,7 @@ class BaseScreen(Screen):
         
     def go_to(self, target, pop=False):
         if self.parent:
+            self.parent.app.previous_screen = self.parent.current
             self.parent.transition.direction = 'right' if pop or target == 'home' else 'left'
             self.parent.current = target
 
@@ -250,20 +251,20 @@ class GameScreen(BaseScreen):
         score_box.add_widget(self.lbl_p1)
         score_box.add_widget(self.lbl_p2)
         
-        btn_box = BoxLayout(spacing=dp(10), size_hint_x=0.5)
+        self.btn_box = BoxLayout(spacing=dp(10), size_hint_x=0.5)
         self.btn_undo = OutlineButton(text="UNDO")
         self.btn_undo.bind(on_release=self.do_undo)
         self.btn_restart = OutlineButton(text="RESTART")
         self.btn_restart.bind(on_release=lambda x: self.parent.app.prompt_restart())
-        btn_box.add_widget(self.btn_undo)
-        btn_box.add_widget(self.btn_restart)
+        self.btn_box.add_widget(self.btn_undo)
+        self.btn_box.add_widget(self.btn_restart)
         
         self.footer_box.add_widget(score_box)
-        self.footer_box.add_widget(btn_box)
+        self.footer_box.add_widget(self.btn_box)
         self.layout.add_widget(self.footer_box)
         self.add_widget(self.layout)
 
-    def on_enter(self, *args):
+    def on_pre_enter(self, *args):
         app = self.parent.app
         self.board_container.clear_widgets()
         self.board_view = BoardView(app.game_state, app.board, app.handle_player_move)
@@ -271,6 +272,8 @@ class GameScreen(BaseScreen):
         self.update_ui()
         
     def do_undo(self, *args):
+        if not settings.get('allow_undo', True):
+            return
         app = self.parent.app
         if not app.game_state.cpu_thinking:
             app.handle_undo()
@@ -285,18 +288,33 @@ class GameScreen(BaseScreen):
         if not app: return
         gs = app.game_state
         
-        if gs.cpu_thinking:
+        if gs.is_game_over():
+            self.lbl_turn.text = "GAME OVER"
+        elif gs.cpu_thinking:
             self.lbl_turn.text = "CPU IS THINKING..."
         else:
             if gs.mode == GameState.MODE_CPU:
-                self.lbl_turn.text = "YOUR TURN" if gs.current_player == gs._actual_first_player else "CPU'S TURN"
+                self.lbl_turn.text = "YOUR TURN" if gs.current_player == Board.PLAYER_1 else "CPU'S TURN"
             else:
-                self.lbl_turn.text = "PLAYER 1'S TURN" if gs.current_player == gs._actual_first_player else "PLAYER 2'S TURN"
+                self.lbl_turn.text = "PLAYER 1'S TURN" if gs.current_player == Board.PLAYER_1 else "PLAYER 2'S TURN"
                 
         p1_pieces = app.board.piece_count[Board.PLAYER_1]
         p2_pieces = app.board.piece_count[Board.PLAYER_2]
         self.lbl_p1.text = f"o WHITE {p1_pieces}"
         self.lbl_p2.text = f"• BLACK {p2_pieces}"
+        
+        if gs.is_game_over():
+            if self.btn_undo in self.btn_box.children:
+                self.btn_box.remove_widget(self.btn_undo)
+            self.btn_restart.text = "PLAY AGAIN"
+        else:
+            if not settings.get('allow_undo', True):
+                if self.btn_undo in self.btn_box.children:
+                    self.btn_box.remove_widget(self.btn_undo)
+            else:
+                if self.btn_undo not in self.btn_box.children:
+                    self.btn_box.add_widget(self.btn_undo, index=len(self.btn_box.children))
+            self.btn_restart.text = "RESTART"
         
         if hasattr(self, 'board_view'):
             last = app.move_history.get_last_move()
@@ -336,6 +354,7 @@ class SettingsScreen(BaseScreen):
         add_setting("SOUND", 'sound')
         add_setting("HAPTICS", 'haptics')
         add_setting("SHOW LAST MOVE", 'show_last_move')
+        add_setting("ALLOW UNDO", 'allow_undo')
         
         self.layout.add_widget(Widget())
         self.layout.add_widget(CustomLabel(text="LINK 5 DOTS • V1.0", size_hint_y=None, height=dp(20), color=PALETTE['text_mid']))
@@ -357,10 +376,13 @@ class ResultScreen(BaseScreen):
         
         self.btn_primary = DarkButton(text="PLAY AGAIN")
         self.btn_primary.bind(on_release=lambda x: self.parent.app.start_new_game(reroll_random=True))
+        self.btn_see_board = OutlineButton(text="SEE BOARD")
+        self.btn_see_board.bind(on_release=lambda x: self.go_to('game', pop=True))
         self.btn_menu = OutlineButton(text="MAIN MENU")
         self.btn_menu.bind(on_release=lambda x: self.go_to('home'))
         
         self.layout.add_widget(self.btn_primary)
+        self.layout.add_widget(self.btn_see_board)
         self.layout.add_widget(self.btn_menu)
         self.add_widget(self.layout)
         
@@ -375,7 +397,7 @@ class ResultScreen(BaseScreen):
         is_lose = outcome == 'lose'
         
         if is_win:
-            self.lbl_title.text = "YOU WIN" if gs.mode == GameState.MODE_CPU else ("PLAYER 1 WINS" if gs.winner == gs._actual_first_player else "PLAYER 2 WINS")
+            self.lbl_title.text = "YOU WIN" if gs.mode == GameState.MODE_CPU else ("PLAYER 1 WINS" if gs.winner == 1 else "PLAYER 2 WINS")
             self.lbl_sub.text = "FIVE IN A ROW"
             self.btn_primary.text = "PLAY AGAIN"
             self.lbl_title.color = PALETTE['text_dark']

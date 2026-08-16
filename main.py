@@ -74,15 +74,19 @@ class Link5DotsApp(App):
             
             # Sound/haptic
             game_screen = self.sm.get_screen('game')
-            game_screen.board_view.play_sound()
-            game_screen.board_view.play_haptic()
-            
-            # Check win
+            if hasattr(game_screen, 'board_view'):
+                game_screen.board_view.play_sound()
+                game_screen.board_view.play_haptic()
+            from game.rules import check_win, check_draw
             winner, win_line = check_win(self.board, r, c)
             if winner:
                 self.game_state.winner = winner
                 self.game_state.win_line = win_line
-                self.show_result('win' if winner == self.game_state._actual_first_player or self.game_state.mode == GameState.MODE_PVP else 'lose')
+                if self.game_state.mode == GameState.MODE_PVP:
+                    outcome = 'win'
+                else:
+                    outcome = 'win' if winner == Board.PLAYER_1 else 'lose'
+                self.show_result(outcome)
                 game_screen.update_ui()
                 return
             elif check_draw(self.board):
@@ -187,16 +191,24 @@ class Link5DotsApp(App):
     def handle_back(self):
         # Triggered by on-screen back button or Android back button
         if self.sm.current == 'game':
-            if self.move_history.count() > 0:
+            if self.game_state.is_game_over():
+                self.go_home()
+            elif self.move_history.count() > 0:
                 dialog = ConfirmDialog("Game will be lost.", lambda: self.go_home())
                 dialog.open()
             else:
                 self.go_home()
-        elif self.sm.current in ['setup', 'settings']:
+        elif self.sm.current == 'settings':
+            prev = getattr(self, 'previous_screen', 'home')
+            self.sm.transition.direction = 'right'
+            self.sm.current = prev
+        elif self.sm.current == 'setup':
             self.go_home()
 
     def prompt_restart(self):
-        if self.move_history.count() > 0:
+        if self.game_state.is_game_over():
+            self.start_new_game(reroll_random=True)
+        elif self.move_history.count() > 0:
             dialog = ConfirmDialog("Restart game?", lambda: self.start_new_game(reroll_random=True))
             dialog.open()
         else:
