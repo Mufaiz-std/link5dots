@@ -42,3 +42,40 @@ def check_win(board, r, c):
 
 def check_draw(board):
     return board.is_full()
+
+def is_deadlocked(board):
+    """
+    Checks if a win is impossible for both players because every possible
+    line of 5 contains at least one piece of each color.
+    """
+    for r in range(board.rows):
+        for c in range(board.cols):
+            # check horizontal (right)
+            if c + 4 < board.cols:
+                if not _is_blocked(board, [(r, c+i) for i in range(5)]):
+                    return False
+            # check vertical (down)
+            if r + 4 < board.rows:
+                if not _is_blocked(board, [(r+i, c) for i in range(5)]):
+                    return False
+            # check diagonal (down-right)
+            if r + 4 < board.rows and c + 4 < board.cols:
+                if not _is_blocked(board, [(r+i, c+i) for i in range(5)]):
+                    return False
+            # check diagonal (down-left)
+            if r + 4 < board.rows and c - 4 >= 0:
+                if not _is_blocked(board, [(r+i, c-i) for i in range(5)]):
+                    return False
+    return True
+
+def _is_blocked(board, line_coords):
+    has_p1 = False
+    has_p2 = False
+    for r, c in line_coords:
+        p = board.get_cell(r, c)
+        if p == Board.PLAYER_1:
+            has_p1 = True
+        elif p == Board.PLAYER_2:
+            has_p2 = True
+    return has_p1 and has_p2
+

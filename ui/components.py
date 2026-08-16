@@ -137,10 +137,10 @@ class CustomToggle(Widget):
         self.ig.add(RoundedRectangle(pos=(knob_x, knob_y), size=(knob_size, knob_size), radius=[knob_size/2]))
 
 class ConfirmDialog(ModalView):
-    def __init__(self, title_text, on_confirm, **kwargs):
+    def __init__(self, title_text, on_confirm, on_cancel=None, confirm_text="RESTART", cancel_text="CANCEL", **kwargs):
         super().__init__(**kwargs)
         self.size_hint = (0.8, None)
-        self.height = dp(160)
+        self.height = dp(180)  # Slightly taller to fit multi-line text
         self.background_color = (0,0,0,0.5)
         self.auto_dismiss = False
         
@@ -160,10 +160,14 @@ class ConfirmDialog(ModalView):
         
         btn_layout = BoxLayout(orientation='horizontal', spacing=dp(10), size_hint_y=0.5)
         
-        btn_cancel = OutlineButton(text="CANCEL")
-        btn_cancel.bind(on_release=self.dismiss)
+        btn_cancel = OutlineButton(text=cancel_text)
+        def do_cancel(instance):
+            self.dismiss()
+            if on_cancel:
+                on_cancel()
+        btn_cancel.bind(on_release=do_cancel)
         
-        btn_restart = DarkButton(text="RESTART")
+        btn_restart = DarkButton(text=confirm_text)
         def do_confirm(instance):
             self.dismiss()
             on_confirm()

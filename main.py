@@ -38,10 +38,11 @@ class Link5DotsApp(App):
         
         return self.sm
 
-    def start_new_game(self, reroll_random=False):
+    def start_new_game(self, reroll_random=True):
         self.game_state.setup_new_game(reroll_random)
         self.board = Board(self.game_state.board_rows, self.game_state.board_cols)
         self.move_history.clear()
+        self.game_state.deadlock_prompted = False
         
         game_screen = self.sm.get_screen('game')
         if hasattr(game_screen, 'board_view'):
@@ -50,6 +51,7 @@ class Link5DotsApp(App):
             
         self.sm.transition.direction = 'left'
         self.sm.current = 'game'
+        game_screen.update_ui()
         
         # If CPU goes first
         if self.game_state.mode == GameState.MODE_CPU and self.game_state.current_player == Board.PLAYER_2:
@@ -64,10 +66,6 @@ class Link5DotsApp(App):
             return
 
         self._execute_move(r, c)
-        
-        if not self.game_state.is_game_over():
-            if self.game_state.mode == GameState.MODE_CPU and self.game_state.current_player == Board.PLAYER_2:
-                self.trigger_cpu_move()
 
     def _execute_move(self, r, c):
         player = self.game_state.current_player
@@ -85,13 +83,48 @@ class Link5DotsApp(App):
                 self.game_state.winner = winner
                 self.game_state.win_line = win_line
                 self.show_result('win' if winner == self.game_state._actual_first_player or self.game_state.mode == GameState.MODE_PVP else 'lose')
+                game_screen.update_ui()
+                return
             elif check_draw(self.board):
                 self.game_state.is_draw = True
                 self.show_result('draw')
-            else:
-                self.game_state.switch_turn()
+                game_screen.update_ui()
+                return
+                
+            from game.rules import is_deadlocked
+            if not getattr(self.game_state, 'deadlock_prompted', False) and is_deadlocked(self.board):
+                self.game_state.deadlock_prompted = True
+                self.prompt_deadlock_draw()
+                game_screen.update_ui()
+                return
+                
+            self._finalize_turn()
             
-            game_screen.update_ui()
+    def _finalize_turn(self):
+        self.game_state.switch_turn()
+        game_screen = self.sm.get_screen('game')
+        game_screen.update_ui()
+        if self.game_state.mode == GameState.MODE_CPU and self.game_state.current_player == Board.PLAYER_2:
+            self.trigger_cpu_move()
+
+    def prompt_deadlock_draw(self):
+        from ui.components import ConfirmDialog
+        dialog = ConfirmDialog(
+            "Neither of us can win.\nDo you want a draw?",
+            on_confirm=self.accept_deadlock_draw,
+            on_cancel=self.reject_deadlock_draw,
+            confirm_text="YES",
+            cancel_text="NO"
+        )
+        dialog.open()
+
+    def accept_deadlock_draw(self):
+        self.game_state.is_draw = True
+        self.show_result('draw')
+        self.sm.get_screen('game').update_ui()
+
+    def reject_deadlock_draw(self):
+        self._finalize_turn()
 
     def trigger_cpu_move(self):
         self.game_state.cpu_thinking = True
@@ -164,10 +197,10 @@ class Link5DotsApp(App):
 
     def prompt_restart(self):
         if self.move_history.count() > 0:
-            dialog = ConfirmDialog("Restart game?", lambda: self.start_new_game())
+            dialog = ConfirmDialog("Restart game?", lambda: self.start_new_game(reroll_random=True))
             dialog.open()
         else:
-            self.start_new_game()
+            self.start_new_game(reroll_random=True)
 
     def go_home(self):
         self.sm.transition.direction = 'right'
