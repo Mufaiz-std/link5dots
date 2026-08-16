@@ -23,7 +23,7 @@ version = 1.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.0,pip==24.0
+requirements = python3.11,kivy==2.3.0,pip==24.0
 
 # (str) python-for-android version to use
 p4a.version = 2024.0715
