@@ -66,7 +66,7 @@ class HomeScreen(BaseScreen):
             for i in range(-2, 3):
                 self.home_ig.add(Line(points=[cx + i*step, cy - 2*step, cx + i*step, cy + 2*step], width=1.5))
                 self.home_ig.add(Line(points=[cx - 2*step, cy + i*step, cx + 2*step, cy + i*step], width=1.5))
-            self.home_ig.add(Color(*PALETTE['text_dark']))
+            self.home_ig.add(Color(*PALETTE['text_primary']))
             self.home_ig.add(Line(circle=(cx, cy, step*0.35), width=2))
             self.home_ig.add(Line(circle=(cx - step, cy - step, step*0.35), width=2))
             self.home_ig.add(Ellipse(pos=(cx - step - step*0.35, cy + step - step*0.35), size=(step*0.7, step*0.7)))
@@ -351,6 +351,42 @@ class SettingsScreen(BaseScreen):
             self.layout.add_widget(box)
             self.layout.add_widget(line)
 
+        # Theme Setting
+        theme_lbl = CustomLabel(text="THEME", halign='left', text_size=(None, None), color=PALETTE['text_mid'], size_hint_y=None, height=dp(30))
+        theme_box = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
+        
+        curr_theme = settings.get('theme', 'light')
+        self.btn_light = AccentButton(text="LIGHT") if curr_theme == 'light' else OutlineButton(text="LIGHT")
+        self.btn_dark = AccentButton(text="DARK") if curr_theme == 'dark' else OutlineButton(text="DARK")
+        
+        def set_theme(t, *args):
+            if settings.get('theme') == t: return
+            settings.set('theme', t)
+            PALETTE.apply_theme(t)
+            app = self.parent.app
+            if hasattr(app, 'rebuild_ui'):
+                app.rebuild_ui()
+                
+        self.btn_light.bind(on_release=lambda x: set_theme('light'))
+        self.btn_dark.bind(on_release=lambda x: set_theme('dark'))
+        
+        theme_box.add_widget(self.btn_light)
+        theme_box.add_widget(self.btn_dark)
+        
+        self.layout.add_widget(theme_lbl)
+        self.layout.add_widget(theme_box)
+        
+        theme_line = Widget(size_hint_y=None, height=dp(1))
+        theme_ig = InstructionGroup()
+        theme_line.canvas.add(theme_ig)
+        def update_theme_rect(instance, value):
+            theme_ig.clear()
+            theme_ig.add(Color(*PALETTE['grid_line']))
+            theme_ig.add(Rectangle(pos=instance.pos, size=instance.size))
+        theme_line.bind(pos=update_theme_rect, size=update_theme_rect)
+        update_theme_rect(theme_line, None)
+        self.layout.add_widget(theme_line)
+
         add_setting("SOUND", 'sound')
         add_setting("HAPTICS", 'haptics')
         add_setting("SHOW LAST MOVE", 'show_last_move')
@@ -400,11 +436,11 @@ class ResultScreen(BaseScreen):
             self.lbl_title.text = "YOU WIN" if gs.mode == GameState.MODE_CPU else ("PLAYER 1 WINS" if gs.winner == 1 else "PLAYER 2 WINS")
             self.lbl_sub.text = "FIVE IN A ROW"
             self.btn_primary.text = "PLAY AGAIN"
-            self.lbl_title.color = PALETTE['text_dark']
+            self.lbl_title.color = PALETTE['text_primary']
             
             def draw_win(*a):
                 self.res_ig.clear()
-                self.res_ig.add(Color(*PALETTE['text_dark']))
+                self.res_ig.add(Color(*PALETTE['text_primary']))
                 cx, cy = graphic.center_x, graphic.center_y
                 for i in range(-2, 3):
                     self.res_ig.add(Ellipse(pos=(cx + i*15 - 5, cy - i*15 - 5), size=(10, 10)))
@@ -432,12 +468,12 @@ class ResultScreen(BaseScreen):
             self.lbl_title.text = "DRAW"
             self.lbl_sub.text = "BOARD IS FULL"
             self.btn_primary.text = "PLAY AGAIN"
-            self.lbl_title.color = PALETTE['text_dark']
+            self.lbl_title.color = PALETTE['text_primary']
             
             def draw_draw(*a):
                 self.res_ig.clear()
                 cx, cy = graphic.center_x, graphic.center_y
-                self.res_ig.add(Color(*PALETTE['text_dark']))
+                self.res_ig.add(Color(*PALETTE['text_primary']))
                 self.res_ig.add(Ellipse(pos=(cx-15, cy+5), size=(10,10)))
                 self.res_ig.add(Line(circle=(cx+5, cy+10, 5), width=1.5))
                 self.res_ig.add(Ellipse(pos=(cx+15, cy+5), size=(10,10)))

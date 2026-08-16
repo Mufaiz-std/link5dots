@@ -59,7 +59,7 @@ class HomeScreen(BaseScreen):
                 for i in range(-2, 3):
                     Line(points=[cx + i*step, cy - 2*step, cx + i*step, cy + 2*step], width=1.5)
                     Line(points=[cx - 2*step, cy + i*step, cx + 2*step, cy + i*step], width=1.5)
-                Color(*PALETTE['text_dark'])
+                Color(*PALETTE['text_primary'])
                 Line(circle=(cx, cy, step*0.35), width=2)
                 Line(circle=(cx - step, cy - step, step*0.35), width=2)
                 Ellipse(pos=(cx - step - step*0.35, cy + step - step*0.35), size=(step*0.7, step*0.7))
@@ -362,12 +362,12 @@ class ResultScreen(BaseScreen):
             self.lbl_title.text = "YOU WIN" if gs.mode == GameState.MODE_CPU else ("PLAYER 1 WINS" if gs.winner == gs._actual_first_player else "PLAYER 2 WINS")
             self.lbl_sub.text = "FIVE IN A ROW"
             self.btn_primary.text = "PLAY AGAIN"
-            self.lbl_title.color = PALETTE['text_dark']
+            self.lbl_title.color = PALETTE['text_primary']
             
             def draw_win(*a):
                 graphic.canvas.clear()
                 with graphic.canvas:
-                    Color(*PALETTE['text_dark'])
+                    Color(*PALETTE['text_primary'])
                     cx, cy = graphic.center_x, graphic.center_y
                     for i in range(-2, 3):
                         Ellipse(pos=(cx + i*15 - 5, cy - i*15 - 5), size=(10, 10))
@@ -396,13 +396,13 @@ class ResultScreen(BaseScreen):
             self.lbl_title.text = "DRAW"
             self.lbl_sub.text = "BOARD IS FULL"
             self.btn_primary.text = "PLAY AGAIN"
-            self.lbl_title.color = PALETTE['text_dark']
+            self.lbl_title.color = PALETTE['text_primary']
             
             def draw_draw(*a):
                 graphic.canvas.clear()
                 with graphic.canvas:
                     cx, cy = graphic.center_x, graphic.center_y
-                    Color(*PALETTE['text_dark'])
+                    Color(*PALETTE['text_primary'])
                     Ellipse(pos=(cx-15, cy+5), size=(10,10))
                     Line(circle=(cx+5, cy+10, 5), width=1.5)
                     Ellipse(pos=(cx+15, cy+5), size=(10,10))

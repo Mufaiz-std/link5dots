@@ -10,17 +10,34 @@ from kivy.properties import BooleanProperty, StringProperty, ListProperty
 from kivy.animation import Animation
 from kivy.metrics import dp
 
-PALETTE = {
-    'screen_bg': get_color_from_hex('#DCE5D6'),
-    'grid_line': get_color_from_hex('#A9B8A2'),
-    'text_dark': get_color_from_hex('#3A4A3A'),
-    'text_mid': get_color_from_hex('#5C6B57'),
-    'accent_fill': get_color_from_hex('#6B8064'),
-    'accent_text': get_color_from_hex('#F2F5EF'),
-    'dark_fill': get_color_from_hex('#3A4A3A'),
-    'muted_stroke': get_color_from_hex('#8A968A'),
-    'muted_line': get_color_from_hex('#8FA37E'),
-}
+class ThemePalette(dict):
+    def apply_theme(self, theme_name):
+        if theme_name == 'dark':
+            self.update({
+                'screen_bg': get_color_from_hex('#1E241E'),
+                'grid_line': get_color_from_hex('#3A453A'),
+                'text_primary': get_color_from_hex('#E7EEE2'),
+                'text_mid': get_color_from_hex('#7E8F76'),
+                'accent_fill': get_color_from_hex('#7FA372'),
+                'accent_text': get_color_from_hex('#14180F'),
+                'dark_fill': get_color_from_hex('#E7EEE2'),
+                'muted_stroke': get_color_from_hex('#5C6B57'),
+                'muted_line': get_color_from_hex('#4A5A44'),
+            })
+        else:
+            self.update({
+                'screen_bg': get_color_from_hex('#DCE5D6'),
+                'grid_line': get_color_from_hex('#A9B8A2'),
+                'text_primary': get_color_from_hex('#3A4A3A'),
+                'text_mid': get_color_from_hex('#5C6B57'),
+                'accent_fill': get_color_from_hex('#6B8064'),
+                'accent_text': get_color_from_hex('#F2F5EF'),
+                'dark_fill': get_color_from_hex('#3A4A3A'),
+                'muted_stroke': get_color_from_hex('#8A968A'),
+                'muted_line': get_color_from_hex('#8FA37E'),
+            })
+
+PALETTE = ThemePalette()
 
 FONT_REGULAR = 'assets/fonts/RobotoMono-Regular.ttf'
 FONT_BOLD = 'assets/fonts/RobotoMono-Bold.ttf'
@@ -28,7 +45,7 @@ FONT_BOLD = 'assets/fonts/RobotoMono-Bold.ttf'
 class CustomLabel(Label):
     def __init__(self, **kwargs):
         kwargs.setdefault('font_name', FONT_REGULAR)
-        kwargs.setdefault('color', PALETTE['text_dark'])
+        kwargs.setdefault('color', PALETTE['text_primary'])
         super().__init__(**kwargs)
 
 class AccentButton(Button):

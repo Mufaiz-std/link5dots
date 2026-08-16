@@ -122,7 +122,7 @@ class BoardView(Scatter):
                     
                     is_hollow = (val == Board.PLAYER_1)
                     
-                    self.board_ig.add(Color(*PALETTE['text_dark']))
+                    self.board_ig.add(Color(*PALETTE['text_primary']))
                     if is_hollow:
                         self.board_ig.add(Line(circle=(px, py, psize/2), width=2))
                     else:

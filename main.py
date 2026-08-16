@@ -6,6 +6,7 @@ import kivy
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.uix.screenmanager import ScreenManager, SlideTransition
+from kivy.uix.floatlayout import FloatLayout
 from kivy.clock import Clock
 from kivy.metrics import dp
 
@@ -20,12 +21,24 @@ import threading
 
 class Link5DotsApp(App):
     def build(self):
-        Window.clearcolor = PALETTE['screen_bg']
-        Window.bind(on_keyboard=self.on_keyboard)
+        from settings.settings_store import settings
+        PALETTE.apply_theme(settings.get('theme', 'light'))
         
+        Window.bind(on_keyboard=self.on_keyboard)
         self.game_state = GameState()
         self.board = Board()
         self.move_history = MoveHistory()
+        
+        self.root_container = FloatLayout()
+        self.rebuild_ui()
+        return self.root_container
+
+    def rebuild_ui(self, target_screen=None):
+        if not target_screen and hasattr(self, 'sm'):
+            target_screen = self.sm.current
+        
+        Window.clearcolor = PALETTE['screen_bg']
+        self.root_container.clear_widgets()
         
         self.sm = ScreenManager(transition=SlideTransition())
         self.sm.add_widget(HomeScreen(name='home'))
@@ -35,8 +48,10 @@ class Link5DotsApp(App):
         self.sm.add_widget(ResultScreen(name='result'))
         
         self.sm.app = self
+        self.root_container.add_widget(self.sm)
         
-        return self.sm
+        if target_screen:
+            self.sm.current = target_screen
 
     def start_new_game(self, reroll_random=True):
         self.game_state.setup_new_game(reroll_random)

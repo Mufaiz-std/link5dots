@@ -7,6 +7,7 @@ class SettingsStore:
     
     # Defaults
     _settings = {
+        'theme': 'light',
         'sound': True,
         'haptics': True,
         'show_last_move': True,
