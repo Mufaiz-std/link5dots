@@ -1,46 +1,147 @@
+# name: Build Android APK
+
+# on:
+#   push:
+#     branches: [ main, master ]
+#   workflow_dispatch:
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-22.04
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v4
+
+#       - name: Install Python 3.11 and system dependencies
+#         run: |
+#           sudo add-apt-repository ppa:deadsnakes/ppa -y
+#           sudo apt update
+#           sudo apt install -y \
+#             python3.11 python3.11-venv python3.11-dev \
+#             git zip unzip openjdk-17-jdk \
+#             autoconf libtool pkg-config \
+#             zlib1g-dev libncurses5-dev libncursesw5-dev \
+#             cmake libffi-dev libssl-dev
+
+#       - name: Install Buildozer for Python 3.11
+#         run: |
+#           python3.11 -m ensurepip --upgrade
+#           python3.11 -m pip install --upgrade pip
+#           python3.11 -m pip install buildozer==1.5.0 "python-for-android==2023.9.16" cython==0.29.37
+
+#       - name: Build with Buildozer
+#         run: |
+#           python3.11 -m buildozer android debug
+
+#       - name: Upload APK Artifact
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: android-apk
+#           path: bin/*.apk
+
+#       - name: Install build dependencies
+#         run: |
+#           pip install --upgrade buildozer
+#           pip install --upgrade pythonforandroid
+
+
+
 name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-22.04
+  build-apk:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      ANDROIDAPI: '31'
+      ANDROIDMINAPI: '21'
+      # Buildozer will download SDK/NDK under $HOME/.buildozer by default.
+      # If you want to preinstall/point to a specific NDK, set ANDROIDNDK here.
 
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Python 3.11 and system dependencies
-        run: |
-          sudo add-apt-repository ppa:deadsnakes/ppa -y
-          sudo apt update
-          sudo apt install -y \
-            python3.11 python3.11-venv python3.11-dev \
-            git zip unzip openjdk-17-jdk \
-            autoconf libtool pkg-config \
-            zlib1g-dev libncurses5-dev libncursesw5-dev \
-            cmake libffi-dev libssl-dev
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Install Buildozer for Python 3.11
-        run: |
-          python3.11 -m ensurepip --upgrade
-          python3.11 -m pip install --upgrade pip
-          python3.11 -m pip install buildozer==1.5.0 "python-for-android==2023.9.16" cython==0.29.37
+      - name: Cache buildozer directories
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            ./.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('**/buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
 
-      - name: Build with Buildozer
-        run: |
-          python3.11 -m buildozer android debug
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-      - name: Upload APK Artifact
+      - name: Ensure pip < 24 (fix for pip internals import)
+        run: python -m pip install --upgrade "pip<24"
+
+      - name: Install system packages (Java, zip, unzip, etc.)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openjdk-11-jdk zip unzip libstdc++6 zlib1g-dev
+
+      - name: Setup Java 11 for Actions tools
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install Buildozer and build dependencies
+        run: |
+          python -m pip install --upgrade setuptools wheel
+          # pin Cython to a compatible version for many Kivy builds
+          python -m pip install --upgrade "Cython>=0.29.21,<0.30"
+          # install buildozer (pin if you have a preferred version)
+          python -m pip install --upgrade "buildozer==1.4.3"
+        env:
+          PIP_NO_CACHE_DIR: "false"
+
+      - name: Show python/pip versions and env (debug)
+        run: |
+          python --version
+          pip --version
+          java -version
+          echo "ANDROIDAPI=$ANDROIDAPI"
+          echo "ANDROIDMINAPI=$ANDROIDMINAPI"
+
+      - name: Build APK with Buildozer
+        run: |
+          # Ensure buildozer.spec exists
+          if [ ! -f buildozer.spec ]; then
+            echo "ERROR: buildozer.spec not found in repo root."
+            exit 1
+          fi
+          # Run clean/build; 'android debug' command will download SDK/NDK on first run
+          buildozer -v android debug
+        # keep workspace as working dir (default)
+      
+      - name: Upload APK artifact(s)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: bin/*.apk
-
-      - name: Install build dependencies
-        run: |
-          pip install --upgrade buildozer
-          pip install --upgrade pythonforandroid
+          name: apks
+          path: |
+            bin/*.apk
+            ./.buildozer/android/platform/build-arm64-v8a_armeabi-v7a/dists/**/bin/*.apk
+            ./.buildozer/apk/*/*.apk
