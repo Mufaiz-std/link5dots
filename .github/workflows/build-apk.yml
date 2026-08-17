@@ -28,7 +28,7 @@ jobs:
         run: |
           python3.11 -m ensurepip --upgrade
           python3.11 -m pip install --upgrade pip
-          python3.11 -m pip install buildozer==1.5.0 "python-for-android==2023.6.20" cython==0.29.37
+          python3.11 -m pip install buildozer==1.5.0 "python-for-android==2023.9.16" cython==0.29.37
 
       - name: Build with Buildozer
         run: |
