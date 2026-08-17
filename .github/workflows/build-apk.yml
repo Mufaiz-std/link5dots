@@ -8,16 +8,31 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container:
-      image: kivy/buildozer:latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Install Python 3.11 and system dependencies
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa -y
+          sudo apt update
+          sudo apt install -y \
+            python3.11 python3.11-venv python3.11-dev \
+            git zip unzip openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev \
+            cmake libffi-dev libssl-dev
+
+      - name: Install Buildozer for Python 3.11
+        run: |
+          python3.11 -m ensurepip --upgrade
+          python3.11 -m pip install --upgrade pip
+          python3.11 -m pip install buildozer cython
+
       - name: Build with Buildozer
         run: |
-          buildozer android debug
+          python3.11 -m buildozer android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
