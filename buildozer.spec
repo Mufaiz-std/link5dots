@@ -25,9 +25,6 @@ version = 1.0
 # comma separated e.g. requirements = sqlite3,kivy
 requirements = python3,kivy
 
-# (str) python-for-android version to use (v2023.06.20 targets Python 3.11, compatible with Kivy 2.3.x)
-p4a.version = v2023.06.20
-
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
