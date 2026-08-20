@@ -25,6 +25,10 @@ version = 1.0
 # comma separated e.g. requirements = sqlite3,kivy
 requirements = hostpython3==3.11.10,python3==3.11.10,kivy==2.3.0
 
+# Fix: skip desktop-only OpenGL backend (cgl_gl) that fails on Android NDK
+# The -INOTNONE/usr/include error happens when p4a tries to compile it
+android.env_vars = KIVY_NO_ENV_CONFIG=1
+
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
 # requirements.source.kivy = ../../kivy
